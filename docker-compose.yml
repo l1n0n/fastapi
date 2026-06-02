@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: fastapi
+    ports:
+      - "5000:5000"
+    volumes:
+      - db_data:/app/db
+    restart: unless-stopped
+
+volumes:
+  db_data:
