@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(del *)"
+      "Bash(del *)",
+      "Bash(git diff *)",
+      "Bash(type *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   },
   "$version": 4
