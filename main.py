@@ -53,8 +53,8 @@ class StudentUpdate(BaseModel):
     grade: float | None = Field(default=None, ge=0, le=5)
 
 @app.get('/', response_class=HTMLResponse)
-def hello(i: int):
-    text = f'''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="{i}" height="800">
+def hello():
+    text = '''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1919" height="800">
                         <h1>Игорь смотри че могу</h1>'''
     return HTMLResponse(content=text)
 
