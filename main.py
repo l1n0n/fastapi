@@ -13,6 +13,7 @@
 
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends
+from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
@@ -49,6 +50,10 @@ class Student(BaseModel):
 class StudentUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=50)
     grade: float | None = Field(default=None, ge=0, le=5)
+
+@app.get('/', response_class=HTMLResponse)
+def hello():
+    return HTMLResponse(content='''img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg">''')
 
 @app.get('/students')
 def get_students(db: Session = Depends(get_db)):
