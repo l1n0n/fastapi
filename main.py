@@ -12,7 +12,6 @@
 # 3. Остальной код уже рабочий — не трогай
 
 from pydantic import BaseModel, Field
-from time import *
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, Column, Integer, Float, String
@@ -54,9 +53,8 @@ class StudentUpdate(BaseModel):
 
 @app.get('/', response_class=HTMLResponse)
 def hello():
-    text = '''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1919" height="800">
-                        <h1>Игорь смотри че могу</h1>'''
-    return HTMLResponse(content=text)
+    return HTMLResponse(content='''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1920" height="800">
+                        <h1>Игорь смотри че могу</h1>''')
 
 @app.get('/students')
 def get_students(db: Session = Depends(get_db)):
