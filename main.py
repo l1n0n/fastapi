@@ -52,7 +52,7 @@ class StudentUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=50)
     grade: float | None = Field(default=None, ge=0, le=5)
 
-@app.get('/', response_class=HTMLResponse)
+@app.get('/')
 def start():
     for i in range(1000, 1921, 10):
         hello(i)
