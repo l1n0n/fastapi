@@ -53,7 +53,8 @@ class StudentUpdate(BaseModel):
 
 @app.get('/', response_class=HTMLResponse)
 def hello():
-    return HTMLResponse(content='''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1920" height="800">''')
+    return HTMLResponse(content='''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1920" height="800">
+                        <h1>Игорь смотри че могу</h1>''')
 
 @app.get('/students')
 def get_students(db: Session = Depends(get_db)):
