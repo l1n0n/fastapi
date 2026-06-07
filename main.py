@@ -41,7 +41,7 @@ def get_db():
     finally:
         db.close()
 
-def get_student_or_404(id: int, db: Session):
+def get_student_or_404(id: int, db: Session = Depends(get_db)):
     student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")

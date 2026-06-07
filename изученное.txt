@@ -39,3 +39,15 @@
 - Рекурсия: базовый случай, мемоизация, глубина стека
 - Генераторы: yield, yield from, конечные и бесконечные генераторы, StopIteration, try/except StopIteration, pipeline из генераторов
 
+## FastAPI
+- FastAPI: создание приложения, маршруты (GET, POST, PUT, DELETE), path-параметры
+- FastAPI: Pydantic модели (BaseModel), валидация входных данных, Field с ограничениями (min_length, max_length, ge, le)
+- FastAPI: SQLAlchemy ORM — создание моделей БД (declarative_base, Column, Integer, Float, String), create_all
+- FastAPI: Подключение к SQLite через create_engine, сессии через sessionmaker
+- FastAPI: Dependency Injection — Depends, создание зависимостей (get_db, get_student_or_404), yield в зависимостях
+- FastAPI: HTTP-статусы (200, 201, 204, 400, 404, 409, 500), status_code в декораторе
+- FastAPI: Обработка ошибок — raise HTTPException, detail, использование status.HTTP_...
+- FastAPI: CRUD операции — чтение (GET списка и одного элемента), создание (POST), обновление (PUT с частичным обновлением), удаление (DELETE)
+- FastAPI: Фильтрация через query.filter().first()/all(), операции с объектами БД (add, commit, delete)
+- Типизация: аннотации типов в маршрутах, Union с None (X | None), default=None для опциональных полей
+
