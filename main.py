@@ -12,8 +12,7 @@
 # 3. Остальной код уже рабочий — не трогай
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
@@ -51,11 +50,6 @@ class StudentUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=50)
     grade: float | None = Field(default=None, ge=0, le=5)
 
-@app.get('/', response_class=HTMLResponse)
-def hello():
-    return HTMLResponse(content='''<img src="https://images.meme-arsenal.com/8e2a489b9edf3b50b3e2f195f3693d0b.jpg" alt="Игорь смотри че могу" width="1920" height="800">
-                        <h1>Игорь смотри че могу</h1>''')
-
 @app.get('/students')
 def get_students(db: Session = Depends(get_db)):
     students = db.query(StudentDataBase).all()
@@ -64,15 +58,14 @@ def get_students(db: Session = Depends(get_db)):
 @app.get('/students/{id}')
 def get_student(id: int, db: Session = Depends(get_db)):
     if id < 1:
-        return {"error": "Invalid identifier"}
+        raise HTTPException(status_code=400, detail="Invalid student identifier")
     student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
     if student:
         return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
-    return {"error": "Student not found"}
+    raise HTTPException(status_code=404, detail="Student not found")
 
-@app.post('/students')
+@app.post('/students', status_code=201)
 def add_student(new_student: Student, db: Session = Depends(get_db)):
-    new_id = max((s.id for s in db.query(StudentDataBase).all()), default=0) + 1
     student = StudentDataBase(name=new_student.name, grade=new_student.grade, age=new_student.age)
     db.add(student)
     db.commit()
@@ -81,7 +74,7 @@ def add_student(new_student: Student, db: Session = Depends(get_db)):
 @app.put('/students/{id}')
 def update_student(id: int, new_student: StudentUpdate, db: Session = Depends(get_db)):
     if id < 1:
-        return {"error": "Invalid identifier"}
+        raise HTTPException(status_code=404, detail="Invalid student identifier")
     student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
     if student:
         if new_student.name is not None:
@@ -90,15 +83,15 @@ def update_student(id: int, new_student: StudentUpdate, db: Session = Depends(ge
             student.grade = new_student.grade
         db.commit()
         return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
-    return {"error": "Student not found"}
+    raise HTTPException(status_code=404, detail="Student not found")
 
-@app.delete('/students/{id}')
+@app.delete('/students/{id}', status_code=204)
 def delete_student(id: int, db: Session = Depends(get_db)):
     if id < 1:
-        return {"error": "Invalid identifier"}
+        raise HTTPException(status_code=400 detail="Invalid student identifier")
     student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
     if student:
         db.delete(student)
         db.commit()
-        return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
-    return {"error": "Student not found"}
+        return {}
+    raise HTTPException(status_code=404, detail="Student not found")
