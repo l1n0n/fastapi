@@ -13,8 +13,12 @@
 
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from passlib.context import CryptContext
+from jose import jwt
+from datetime import *
 
 app = FastAPI()
 
@@ -24,15 +28,33 @@ SessionLocal = sessionmaker(bind=engine)
 
 Base = declarative_base()
 
-class StudentDataBase(Base):
-    __tablename__ = "students"
+class UserDataBase(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    grade = Column(Float, nullable=False)
-    age = Column(Integer, default=18)
+    username = Column(String, unique=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+
+class Token(BaseModel):
+    access_token: str
+    type: str
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ALGORITHM = "HS256"
+SECRET_KEY = "my-secret-key"
 
 Base.metadata.create_all(bind=engine)
+
+def create_access_token(data: str, expires_delta: datetime):
+    
 
 def get_db():
     db = SessionLocal()
@@ -42,7 +64,7 @@ def get_db():
         db.close()
 
 def get_student_or_404(id: int, db: Session = Depends(get_db)):
-    student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
+    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
     return student
@@ -57,16 +79,16 @@ class StudentUpdate(BaseModel):
 
 @app.get('/students')
 def get_students(db: Session = Depends(get_db)):
-    students = db.query(StudentDataBase).all()
+    students = db.query(UserDataBase).all()
     return [{"id": student.id, "name": student.name, "grade": student.grade, "age": student.age} for student in students]
 
 @app.get('/students/{id}')
-def get_student(student: StudentDataBase = Depends(get_student_or_404)):
+def get_student(student: UserDataBase = Depends(get_student_or_404)):
     return student
 
 @app.post('/students', status_code=201)
 def add_student(new_student: Student, db: Session = Depends(get_db)):
-    student = StudentDataBase(name=new_student.name, grade=new_student.grade, age=new_student.age)
+    student = UserDataBase(name=new_student.name, grade=new_student.grade, age=new_student.age)
     db.add(student)
     db.commit()
     return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
@@ -75,7 +97,7 @@ def add_student(new_student: Student, db: Session = Depends(get_db)):
 def update_student(id: int, new_student: StudentUpdate, db: Session = Depends(get_db)):
     if id < 1:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid student identifier")
-    student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
+    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
     if student:
         if new_student.name is not None:
             student.name = new_student.name
@@ -89,7 +111,7 @@ def update_student(id: int, new_student: StudentUpdate, db: Session = Depends(ge
 def delete_student(id: int, db: Session = Depends(get_db)):
     if id < 1:
         raise HTTPException(status_code=400, detail="Invalid student identifier")
-    student = db.query(StudentDataBase).filter(StudentDataBase.id == id).first()
+    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
     if student:
         db.delete(student)
         db.commit()
