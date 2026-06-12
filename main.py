@@ -17,7 +17,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import *
 
 app = FastAPI()
@@ -53,8 +53,21 @@ SECRET_KEY = "my-secret-key"
 
 Base.metadata.create_all(bind=engine)
 
-def create_access_token(data: str, expires_delta: datetime):
-    
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    encode = data.copy()
+    expires = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    encode.update({"expires": expires})
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_access_token(token: Token):
+    try:
+        data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        name: str = data.get("sub")
+        if name is not None:
+            return name
+        return None
+    except JWTError:
+        return None
 
 def get_db():
     db = SessionLocal()
