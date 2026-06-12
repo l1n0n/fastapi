@@ -1,15 +1,54 @@
-# ========== Практика 8 ==========
+# ========== Практика 9: Alembic — миграции БД ==========
 
-# Добавь валидацию к моделям Student и StudentUpdate с помощью Field.
+# Alembic — инструмент для управления изменениями схемы БД.
+# Вместо того чтобы каждый раз удалять и создавать БД заново,
+# мы пишем миграции — скрипты, которые описывают изменения.
+
+# Как это работает:
+# 1. alembic init — создаёт папку с конфигурацией
+# 2. alembic revision --autogenerate — сравнивает модели с БД и генерирует скрипт
+# 3. alembic upgrade head — применяет миграцию к БД
+# 4. alembic downgrade -1 — откат на одну миграцию назад
+# 5. alembic history — история всех миграций
+
+# Установка:
+# pip install alembic
+
+# Настройка:
+# 1. alembic init alembic — создать папку alembic/
+# 2. В alembic.ini прописать строку подключения к БД:
+#    sqlalchemy.url = sqlite:///students.db
+# 3. В alembic/env.py импортировать Base из main.py и прописать:
+#    target_metadata = Base.metadata
+# 4. alembic revision --autogenerate -m "initial" — первая миграция
+# 5. alembic upgrade head — применить
+
+# Структура папки alembic/:
+# alembic/
+# ├── env.py          — конфиг: подключение к БД, импорт моделей
+# ├── versions/       — папка с файлами миграций
+# │   ├── xxxx_initial.py
+# │   └── xxxx_add_email_field.py
+# └── alembic.ini     — общие настройки
+
+# Что внутри файла миграции:
+# def upgrade():
+#     op.add_column('users', sa.Column('email', sa.String(), nullable=True))
 #
-# Требования к валидации:
-# - name: от 1 до 50 символов
-# - grade: от 0 до 5
-# - age: от 14 до 100 (по умолчанию 18)
-#
-# 1. Импортируй Field из pydantic
-# 2. Добавь Field с ограничениями ко всем полям Student и StudentUpdate
-# 3. Остальной код уже рабочий — не трогай
+# def downgrade():
+#     op.drop_column('users', 'email')
+
+# ЗАДАНИЕ:
+# 1. Установи alembic: pip install alembic
+# 2. Выполни alembic init alembic
+# 3. Настрой alembic.ini и env.py (см. выше)
+# 4. Сгенерируй первую миграцию: alembic revision --autogenerate -m "initial"
+# 5. Примени её: alembic upgrade head
+# 6. Добавь в модель UserDataBase новое поле: email = Column(String, nullable=True)
+# 7. Сгенерируй миграцию для нового поля: alembic revision --autogenerate -m "add email"
+# 8. Примени её: alembic upgrade head
+# 9. Откати последнюю миграцию: alembic downgrade -1
+# 10. Примени снова: alembic upgrade head
 
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends, HTTPException, status

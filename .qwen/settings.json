@@ -6,7 +6,8 @@
       "Bash(type *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(docker-compose *)"
+      "Bash(docker-compose *)",
+      "Bash(docker images)"
     ]
   },
   "$version": 4
