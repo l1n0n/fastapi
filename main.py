@@ -40,6 +40,10 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
+class UserUpdate(BaseModel):
+    username: str
+    password: str
+
 class UserOut(BaseModel):
     id: int
     username: str
@@ -86,57 +90,32 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="Unauthorized user")
     return user
 
-def get_student_or_404(id: int, db: Session = Depends(get_db)):
-    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
-    if not student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
-    return student
-class Student(BaseModel):
-    name: str = Field(..., min_length=1, max_length=50)
-    grade: float = Field(..., ge=0, le=5)
-    age: int = Field(default=18, ge=14, le=100)
+@app.get('/users')
+def get_users(db: Session = Depends(get_db)):
+    users = db.query(UserDataBase).all()
+    return [{"id": user.id, "username": user.username} for user in users]
 
-class StudentUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=50)
-    grade: float | None = Field(default=None, ge=0, le=5)
-
-@app.get('/students')
-def get_students(db: Session = Depends(get_db)):
-    students = db.query(UserDataBase).all()
-    return [{"id": student.id, "name": student.name, "grade": student.grade, "age": student.age} for student in students]
-
-@app.get('/students/{id}')
-def get_student(student: UserDataBase = Depends(get_student_or_404)):
-    return student
-
-@app.post('/students', status_code=201)
-def add_student(new_student: Student, db: Session = Depends(get_db)):
-    student = UserDataBase(name=new_student.name, grade=new_student.grade, age=new_student.age)
-    db.add(student)
-    db.commit()
-    return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
-
-@app.put('/students/{id}')
-def update_student(id: int, new_student: StudentUpdate, db: Session = Depends(get_db)):
+@app.put('/users/{id}', dependencies=[Depends(get_current_user)], response_model=UserOut)
+def update_user(id: int, new_user: UserUpdate, db: Session = Depends(get_db)):
     if id < 1:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid student identifier")
-    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
-    if student:
-        if new_student.name is not None:
-            student.name = new_student.name
-        if new_student.grade is not None:
-            student.grade = new_student.grade
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid user identifier")
+    user = db.query(UserDataBase).filter(UserDataBase.id == id).first()
+    if user:
+        if new_user.name is not None:
+            user.name = new_user.name
+        if new_user.grade is not None:
+            user.grade = new_user.grade
         db.commit()
-        return {"id": student.id, "name": student.name, "grade": student.grade, "age": student.age}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+        return user
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-@app.delete('/students/{id}', status_code=204)
-def delete_student(id: int, db: Session = Depends(get_db)):
+@app.delete('/users/{id}', status_code=204, dependencies=[Depends(get_current_user)])
+def delete_user(id: int, db: Session = Depends(get_db)):
     if id < 1:
         raise HTTPException(status_code=400, detail="Invalid student identifier")
-    student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
-    if student:
-        db.delete(student)
+    user = db.query(UserDataBase).filter(UserDataBase.id == id).first()
+    if user:
+        db.delete(user)
         db.commit()
         return {}
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
@@ -144,7 +123,7 @@ def delete_student(id: int, db: Session = Depends(get_db)):
 @app.post('/register', response_model=UserOut, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = db.query(UserDataBase).filter(UserDataBase.username == user.username).first()
-    if existing_user is None:
+    if existing_user is not None:
         raise HTTPException(
             status_code=409,
             detail = "Username is already taken"
@@ -159,10 +138,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 @app.post('/login', response_model=Token)
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(UserDataBase).filter(UserDataBase.username == data.username).first()
-    if user is None or pwd_context.verify(data.password, user.hashed_password):
+    if user is None or not pwd_context.verify(data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password"
         )
     token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=15))
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "type": "bearer"}

@@ -11,6 +11,14 @@
 Объяснения писать В test.py. В main.py — ТОЛЬКО задания и код пользователя.
 
 ## Изучено
+
+- FastAPI JWT: Создание и декодирование токенов (python-jose), SECRET_KEY, ALGORITHM, expires, sub claim
+- FastAPI JWT: Хеширование паролей (bcrypt через passlib), pwd_context.hash(), pwd_context.verify()
+- FastAPI JWT: OAuth2PasswordBearer — извлечение токена из заголовка Authorization
+- FastAPI JWT: OAuth2PasswordRequestForm — приём username/password в /login
+- FastAPI JWT: response_model для JSON-сериализации ответа
+- FastAPI JWT: Защита маршрутов через Depends(get_current_user), HTTPException 401 + WWW-Authenticate header
+- FastAPI JWT: Pydantic модели UserCreate, UserOut, Token — разделение input/output моделей
 - Переменные и типы данных (int, float, complex, str, bool, NoneType, list, tuple, dict, set, frozenset)
 - Приведение типов, type(), id()
 - Операторы (арифметические, сравнения, логические, присваивания, принадлежности, идентичности, приоритет)
