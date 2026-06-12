@@ -61,7 +61,7 @@ Base.metadata.create_all(bind=engine)
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encode = data.copy()
     expires = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
-    encode.update({"expires": expires})
+    encode.update({"exp": expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_access_token(token: str):
@@ -106,7 +106,7 @@ def update_user(id: int, new_user: UserUpdate, db: Session = Depends(get_db)):
         if new_user.password is not None:
             user.hashed_password = pwd_context.hash(new_user.password)
         db.commit()
-        return user
+        return {"id": user.id, "username": user.username}
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 @app.delete('/users/{id}', status_code=204, dependencies=[Depends(get_current_user)])
@@ -133,7 +133,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(user_db)
     db.commit()
     db.refresh(user_db)
-    return user_db
+    return {"id": user_db.id, "username": user_db.username}
 
 @app.post('/login', response_model=Token)
 def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
