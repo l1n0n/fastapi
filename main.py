@@ -16,6 +16,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy.exc import IntegrityError
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import *
@@ -90,7 +91,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise HTTPException(status_code=401, detail="Unauthorized user")
     return user
 
-@app.get('/users')
+@app.get('/users', dependencies=[Depends(get_current_user)])
 def get_users(db: Session = Depends(get_db)):
     users = db.query(UserDataBase).all()
     return [{"id": user.id, "username": user.username} for user in users]
@@ -114,11 +115,10 @@ def delete_user(id: int, db: Session = Depends(get_db)):
     if id < 1:
         raise HTTPException(status_code=400, detail="Invalid user identifier")
     user = db.query(UserDataBase).filter(UserDataBase.id == id).first()
-    if user:
-        db.delete(user)
-        db.commit()
-        return {}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db.delete(user)
+    db.commit()
 
 @app.post('/register', response_model=UserOut, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -131,7 +131,14 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     hash = pwd_context.hash(user.password)
     user_db = UserDataBase(username=user.username, hashed_password=hash)
     db.add(user_db)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="Username already taken"
+        )
     db.refresh(user_db)
     return {"id": user_db.id, "username": user_db.username}
 
