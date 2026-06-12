@@ -13,7 +13,7 @@
 
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import create_engine, Column, Integer, Float, String
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from passlib.context import CryptContext
@@ -141,5 +141,28 @@ def delete_student(id: int, db: Session = Depends(get_db)):
         return {}
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
 
-@app.post('/register')
-def register():
+@app.post('/register', response_model=UserOut, status_code=201)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(UserDataBase).filter(UserDataBase.username == user.username).first()
+    if existing_user is None:
+        raise HTTPException(
+            status_code=409,
+            detail = "Username is already taken"
+        )
+    hash = pwd_context.hash(user.password)
+    user_db = UserDataBase(username=user.username, hashed_password=hash)
+    db.add(user_db)
+    db.commit()
+    db.refresh(user_db)
+    return user_db
+
+@app.post('/login', response_model=Token)
+def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(UserDataBase).filter(UserDataBase.username == data.username).first()
+    if user is None or pwd_context.verify(data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password"
+        )
+    token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=15))
+    return {"access_token": token, "token_type": "bearer"}
