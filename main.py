@@ -21,6 +21,7 @@ from jose import jwt, JWTError
 from datetime import *
 
 app = FastAPI()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/login')
 
 engine = create_engine("sqlite:////app/db/students.db")
 
@@ -59,7 +60,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     encode.update({"expires": expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def decode_access_token(token: Token):
+def decode_access_token(token: str):
     try:
         data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         name: str = data.get("sub")
@@ -75,6 +76,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    username = decode_access_token(token)
+    if username is None:
+        raise HTTPException(status_code=401, detail="Token expired", headers={"WWW-Authenticate": "Bearer"})
+    user = db.query(UserDataBase).filter(UserDataBase.username == username).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized user")
+    return user
 
 def get_student_or_404(id: int, db: Session = Depends(get_db)):
     student = db.query(UserDataBase).filter(UserDataBase.id == id).first()
@@ -130,3 +140,6 @@ def delete_student(id: int, db: Session = Depends(get_db)):
         db.commit()
         return {}
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+
+@app.post('/register')
+def register():
