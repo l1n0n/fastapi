@@ -41,8 +41,8 @@ class UserCreate(BaseModel):
     password: str
 
 class UserUpdate(BaseModel):
-    username: str
-    password: str
+    username: str | None = None
+    password: str | None = None
 
 class UserOut(BaseModel):
     id: int
@@ -50,7 +50,7 @@ class UserOut(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-    type: str
+    token_type: str
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ALGORITHM = "HS256"
@@ -101,10 +101,10 @@ def update_user(id: int, new_user: UserUpdate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid user identifier")
     user = db.query(UserDataBase).filter(UserDataBase.id == id).first()
     if user:
-        if new_user.name is not None:
-            user.name = new_user.name
-        if new_user.grade is not None:
-            user.grade = new_user.grade
+        if new_user.username is not None:
+            user.username = new_user.username
+        if new_user.password is not None:
+            user.hashed_password = pwd_context.hash(new_user.password)
         db.commit()
         return user
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -112,13 +112,13 @@ def update_user(id: int, new_user: UserUpdate, db: Session = Depends(get_db)):
 @app.delete('/users/{id}', status_code=204, dependencies=[Depends(get_current_user)])
 def delete_user(id: int, db: Session = Depends(get_db)):
     if id < 1:
-        raise HTTPException(status_code=400, detail="Invalid student identifier")
+        raise HTTPException(status_code=400, detail="Invalid user identifier")
     user = db.query(UserDataBase).filter(UserDataBase.id == id).first()
     if user:
         db.delete(user)
         db.commit()
         return {}
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 @app.post('/register', response_model=UserOut, status_code=201)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -144,4 +144,4 @@ def login(data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
             detail="Incorrect username or password"
         )
     token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(minutes=15))
-    return {"access_token": token, "type": "bearer"}
+    return {"access_token": token, "token_type": "bearer"}
